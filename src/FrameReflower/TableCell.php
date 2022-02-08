@@ -90,14 +90,14 @@ class TableCell extends Block
 
         // Set the containing blocks and reflow each child
         foreach ($this->_frame->get_children() as $child) {
-            if ($page->is_full()) {
-                break;
-            }
-
             $child->set_containing_block($content_x, $content_y, $cb_w, $h);
             $this->process_clear($child);
             $child->reflow($this->_frame);
-            $this->process_float($child, $x + $left_space, $w - $right_space - $left_space);
+            $this->process_float($child, $content_x, $cb_w);
+
+            if ($page->is_full()) {
+                break;
+            }
         }
 
         // Determine our height
@@ -130,8 +130,8 @@ class TableCell extends Block
 
     public function get_min_max_content_width(): array
     {
-        // Ignore percentage values for a specified width here, as the
-        // containing block is not defined yet
+        // Ignore percentage values for a specified width here, as they are
+        // relative to the table width, which is not determined yet
         $style = $this->_frame->get_style();
         $width = $style->width;
         $fixed_width = $width !== "auto" && !Helpers::is_percent($width);
@@ -147,6 +147,11 @@ class TableCell extends Block
         }
 
         // Handle min/max width style properties
-        return $this->restrict_min_max_width($min, $max);
+        $min_width = $this->resolve_min_width(null);
+        $max_width = $this->resolve_max_width(null);
+        $min = Helpers::clamp($min, $min_width, $max_width);
+        $max = Helpers::clamp($max, $min_width, $max_width);
+
+        return [$min, $max];
     }
 }

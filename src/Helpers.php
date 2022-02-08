@@ -209,6 +209,22 @@ class Helpers
     }
 
     /**
+     * Restrict a length to the given range.
+     *
+     * If min > max, the result is min.
+     *
+     * @param float $length
+     * @param float $min
+     * @param float $max
+     *
+     * @return float
+     */
+    public static function clamp(float $length, float $min, float $max): float
+    {
+        return max($min, min($length, $max));
+    }
+
+    /**
      * Determines whether $value is a percentage or not
      *
      * @param string|float|int $value
@@ -945,5 +961,68 @@ class Helpers
         }
 
         return $str;
+    }
+
+    /**
+     * Check whether two lengths should be considered equal, accounting for
+     * inaccuracies in float computation.
+     *
+     * The implementation relies on the fact that we are neither dealing with
+     * very large, nor with very small numbers in layout. Adapted from
+     * https://floating-point-gui.de/errors/comparison/.
+     *
+     * @param float $a
+     * @param float $b
+     *
+     * @return bool
+     */
+    public static function lengthEqual(float $a, float $b): bool
+    {
+        // The epsilon results in a precision of at least:
+        // * 7 decimal digits at around 1
+        // * 4 decimal digits at around 1000 (around the size of common paper formats)
+        // * 2 decimal digits at around 100,000 (100,000pt ~ 35.28m)
+        static $epsilon = 1e-8;
+        static $almostZero = 1e-12;
+
+        $diff = abs($a - $b);
+
+        if ($a === $b || $diff < $almostZero) {
+            return true;
+        }
+
+        return $diff < $epsilon * max(abs($a), abs($b));
+    }
+
+    /**
+     * Check `$a < $b`, accounting for inaccuracies in float computation.
+     */
+    public static function lengthLess(float $a, float $b): bool
+    {
+        return $a < $b && !self::lengthEqual($a, $b);
+    }
+
+    /**
+     * Check `$a <= $b`, accounting for inaccuracies in float computation.
+     */
+    public static function lengthLessOrEqual(float $a, float $b): bool
+    {
+        return $a <= $b || self::lengthEqual($a, $b);
+    }
+
+    /**
+     * Check `$a > $b`, accounting for inaccuracies in float computation.
+     */
+    public static function lengthGreater(float $a, float $b): bool
+    {
+        return $a > $b && !self::lengthEqual($a, $b);
+    }
+
+    /**
+     * Check `$a >= $b`, accounting for inaccuracies in float computation.
+     */
+    public static function lengthGreaterOrEqual(float $a, float $b): bool
+    {
+        return $a >= $b || self::lengthEqual($a, $b);
     }
 }
